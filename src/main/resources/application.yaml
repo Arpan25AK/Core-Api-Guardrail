@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: Core-Api-Guardrails
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/grid07
+    username: grid07
+    password: grid07
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 2
+          max-wait: 1000ms
+
+server:
+  port: 8080
+
+
+app:
+  redis:
+    bot-cooldown-ttl: 600        # 10 minutes cooldown
+    notif-cooldown-ttl: 900      # 15 minutes cooldown
+    horizontal-cap: 100          # max bot replies per post
+    vertical-cap: 20             # max comment depth
+
+  scheduler:
+    notif-sweep-cron: "0 */5 * * * *"   # every 5 minutes
+
+logging:
+  level:
+    com.assignment: DEBUG
+    org.springframework.data.redis: INFO
