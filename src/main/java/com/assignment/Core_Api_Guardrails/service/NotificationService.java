@@ -19,7 +19,7 @@ public class NotificationService {
     private static final String NOTIF_COOLDOWN_KEY = "notif:cooldown:user_%d";
     private static final String PENDING_NOTIFS_KEY = "user:%d:pending_notifs";
 
-    public void handleNotification(Long userId, String botName){
+    public void handleBotNotification(Long userId, String botName){
         String cooldownKey = String.format(NOTIF_COOLDOWN_KEY,userId);
         String pendingKey = String.format(PENDING_NOTIFS_KEY,userId);
         String message = "bot" + botName + "has interacted with ur post";
