@@ -29,7 +29,7 @@ public class CommentService {
     private final ViralityService viralityService;
 
     @Transactional
-    public CommentResponse createComment(Long postId, CommentRequest request){
+    public CommentResponse addComment(Long postId, CommentRequest request){
         Post post = postRepo.findById(postId).orElseThrow(()->
                 new ResponseStatusException(HttpStatus.NOT_FOUND,"post not found"));
 
