@@ -45,8 +45,8 @@ public class CommentService {
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Bot not found with id {}" + request.getAuthorId()));
 
         Long humanId = null;
-        if(request.getAuthorType() == AuthorType.USER){
-            humanId = request.getAuthorId();
+        if(post.getAuthorType() == AuthorType.USER){
+            humanId = post.getAuthorId();
         }
 
         if(humanId != null){

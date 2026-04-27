@@ -3,7 +3,6 @@ package com.assignment.Core_Api_Guardrails.service;
 import com.assignment.Core_Api_Guardrails.config.AppConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.aop.ThrowsAdvice;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
