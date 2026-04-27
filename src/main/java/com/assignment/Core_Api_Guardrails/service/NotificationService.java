@@ -24,9 +24,9 @@ public class NotificationService {
         String pendingKey = String.format(PENDING_NOTIFS_KEY,userId);
         String message = "Bot " + botName + " replied to your post";
 
-        Boolean Cooldown = redisTemplate.hasKey(cooldownKey);
+        Boolean cooldown = redisTemplate.hasKey(cooldownKey);
 
-        if(Boolean.TRUE.equals(Cooldown)){
+        if(Boolean.TRUE.equals(cooldown)){
             redisTemplate.opsForList().rightPush(pendingKey,message);
             log.warn("this bot has already interacted with the user");
         }else {

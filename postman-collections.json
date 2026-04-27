@@ -1,0 +1,578 @@
+{
+  "info": {
+    "_postman_id": "core-api-guardrails-v1",
+    "name": "Core API Guardrails",
+    "description": "Spring Boot microservice — Phase 1–4 endpoints covering Core API, Redis Virality Engine, Atomic Locks, and Notification Engine.\n\n**Base URL**: `http://localhost:8080`\n\n**Pre-requisites**:\n- Docker running: `docker-compose up -d`\n- Application running on port 8080\n- Seed at least one User (id=1), one Bot (id=1), and one Post (id=1) before running comment/like flows.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",  "value": "http://localhost:8080", "type": "string" },
+    { "key": "postId",   "value": "1",                    "type": "string" },
+    { "key": "userId",   "value": "1",                    "type": "string" },
+    { "key": "botId",    "value": "1",                    "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Phase 1 — Core API",
+      "description": "Standard REST endpoints: create posts, add comments, like posts.",
+      "item": [
+        {
+          "name": "Create Post (User author)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 201 Created\", () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Response has id\", () => pm.expect(json.id).to.be.a('number'));",
+                  "pm.test(\"authorType is USER\", () => pm.expect(json.authorType).to.eql('USER'));",
+                  "pm.collectionVariables.set('postId', json.id);",
+                  "console.log('postId set to', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/posts", "host": ["{{baseUrl}}"], "path": ["api","posts"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{userId}},\n  \"authorType\": \"USER\",\n  \"content\": \"This is a user-authored test post created via Postman.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Post (Bot author)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 201 Created\", () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"authorType is BOT\", () => pm.expect(json.authorType).to.eql('BOT'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/posts", "host": ["{{baseUrl}}"], "path": ["api","posts"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{botId}},\n  \"authorType\": \"BOT\",\n  \"content\": \"This is a bot-authored post.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Post — Validation Error (missing content)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 400 Bad Request\", () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/posts", "host": ["{{baseUrl}}"], "path": ["api","posts"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{userId}},\n  \"authorType\": \"USER\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Add Human Comment (depth 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 201 Created\", () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"authorType is USER\", () => pm.expect(json.authorType).to.eql('USER'));",
+                  "pm.test(\"depthLevel is 1\", () => pm.expect(json.depthLevel).to.eql(1));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","{{postId}}","comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{userId}},\n  \"authorType\": \"USER\",\n  \"content\": \"Human comment at depth 1.\",\n  \"depthLevel\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Add Bot Comment (depth 1) — first reply",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 201 Created\", () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"authorType is BOT\", () => pm.expect(json.authorType).to.eql('BOT'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","{{postId}}","comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{botId}},\n  \"authorType\": \"BOT\",\n  \"content\": \"Bot reply at depth 1 — first interaction.\",\n  \"depthLevel\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Like a Post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Success message\", () => pm.expect(pm.response.text()).to.include('liked'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/like",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","{{postId}}","like"]
+            }
+          }
+        },
+        {
+          "name": "Like Non-Existent Post — 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 404 Not Found\", () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/999999/like",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","999999","like"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Phase 2 — Atomic Guardrails",
+      "description": "Test Redis-enforced caps: Horizontal (100 bot replies), Vertical (depth > 20), Cooldown (bot→human, 10 min TTL).",
+      "item": [
+        {
+          "name": "Horizontal Cap — Bot comment when limit NOT reached",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"201 or 429\", () => {",
+                  "  pm.expect([201, 429]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","{{postId}}","comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{botId}},\n  \"authorType\": \"BOT\",\n  \"content\": \"Bot testing horizontal cap (below 100).\",\n  \"depthLevel\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Horizontal Cap — 101st bot comment MUST return 429",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// This test is meaningful only after 100 bot replies have been sent to this post.",
+                  "// Run the 'Spam Test (200 concurrent)' runner first, then fire this."
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 429 Too Many Requests\", () => pm.response.to.have.status(429));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","{{postId}}","comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{botId}},\n  \"authorType\": \"BOT\",\n  \"content\": \"This is the 101st bot comment — must be rejected.\",\n  \"depthLevel\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Vertical Cap — depth exactly 20 (boundary, should pass)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"201 Created (depth 20 allowed)\", () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","{{postId}}","comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{botId}},\n  \"authorType\": \"BOT\",\n  \"content\": \"Comment at max allowed depth.\",\n  \"depthLevel\": 20\n}"
+            }
+          }
+        },
+        {
+          "name": "Vertical Cap — depth 21 MUST return 429",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 429 Too Many Requests\", () => pm.response.to.have.status(429));",
+                  "pm.test(\"Error mentions depth\", () => {",
+                  "  const body = pm.response.text().toLowerCase();",
+                  "  pm.expect(body).to.satisfy(b => b.includes('depth') || b.includes('deep'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","{{postId}}","comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{botId}},\n  \"authorType\": \"BOT\",\n  \"content\": \"This comment is too deep — must be rejected.\",\n  \"depthLevel\": 21\n}"
+            }
+          }
+        },
+        {
+          "name": "Vertical Cap — depth 50 (extreme case) MUST return 429",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 429 Too Many Requests\", () => pm.response.to.have.status(429));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","{{postId}}","comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{botId}},\n  \"authorType\": \"BOT\",\n  \"content\": \"Extreme depth comment — must be rejected.\",\n  \"depthLevel\": 50\n}"
+            }
+          }
+        },
+        {
+          "name": "Cooldown Cap — 1st bot→human interaction (sets cooldown TTL)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 201 Created — first interaction allowed\", () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","{{postId}}","comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{botId}},\n  \"authorType\": \"BOT\",\n  \"content\": \"Bot first interaction with this user's post.\",\n  \"depthLevel\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Cooldown Cap — 2nd bot→same human within 10 min MUST return 429",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 429 Too Many Requests — cooldown active\", () => pm.response.to.have.status(429));",
+                  "pm.test(\"Error mentions cooldown\", () => {",
+                  "  pm.expect(pm.response.text().toLowerCase()).to.include('cooldown');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","{{postId}}","comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{botId}},\n  \"authorType\": \"BOT\",\n  \"content\": \"Bot second attempt within 10 minutes — must be rejected.\",\n  \"depthLevel\": 1\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Phase 3 — Notification Engine",
+      "description": "Verify Redis throttler behavior: first bot interaction triggers immediate push log; subsequent interactions within 15 min queue into Redis List.",
+      "item": [
+        {
+          "name": "Notification — 1st bot interaction (triggers push log)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 201 Created\", () => pm.response.to.have.status(201));",
+                  "// Check server logs for: 'Push Notification Sent to User'"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","{{postId}}","comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{botId}},\n  \"authorType\": \"BOT\",\n  \"content\": \"First bot interaction — immediate push notification expected.\",\n  \"depthLevel\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "Notification — 2nd bot interaction within 15 min (queues to Redis list)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"201 or 429 (depends on cooldown state)\", () => {",
+                  "  pm.expect([201, 429]).to.include(pm.response.code);",
+                  "});",
+                  "// Check server logs — NO immediate push; message pushed to pending_notifs list"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","{{postId}}","comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": 2,\n  \"authorType\": \"BOT\",\n  \"content\": \"Second bot interaction — should be queued, not sent immediately.\",\n  \"depthLevel\": 3\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Phase 4 — Spam & Race Condition Test",
+      "description": "Concurrency test: fire N sequential bot comments to validate exact stop at 100. For true parallel testing use the shell script test200.sh.",
+      "item": [
+        {
+          "name": "Spam Batch — Single bot comment (run via Collection Runner × 200)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Use Collection Runner: Iterations = 200, delay = 0ms",
+                  "// Expected: first 100 → 201, remaining 100 → 429",
+                  "const i = pm.info.iteration + 1;",
+                  "console.log(`Sending bot comment iteration ${i}`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const code = pm.response.code;",
+                  "const iteration = pm.info.iteration + 1;",
+                  "pm.test(`Iteration ${iteration}: 201 or 429`, () => {",
+                  "  pm.expect([201, 429]).to.include(code);",
+                  "});",
+                  "if (iteration <= 100) {",
+                  "  pm.test(`Iteration ${iteration}: should be 201 (under cap)`, () => {",
+                  "    pm.expect(code).to.eql(201);",
+                  "  });",
+                  "} else {",
+                  "  pm.test(`Iteration ${iteration}: should be 429 (over cap)`, () => {",
+                  "    pm.expect(code).to.eql(429);",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","{{postId}}","comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{botId}},\n  \"authorType\": \"BOT\",\n  \"content\": \"Spam test bot comment iteration {{$randomInt}}\",\n  \"depthLevel\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Post-Spam Verify — Any further bot comment returns 429",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 429 — cap already reached\", () => pm.response.to.have.status(429));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","{{postId}}","comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{botId}},\n  \"authorType\": \"BOT\",\n  \"content\": \"Post-spam verification — should always be 429 now.\",\n  \"depthLevel\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Human still CAN comment after bot cap reached",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 201 Created — human bypass cap\", () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"], "path": ["api","posts","{{postId}}","comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": {{userId}},\n  \"authorType\": \"USER\",\n  \"content\": \"Human comment after bot cap — must still work.\",\n  \"depthLevel\": 1\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
