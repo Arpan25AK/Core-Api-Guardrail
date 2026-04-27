@@ -1,7 +1,3 @@
-Here's the corrected, complete README — ready to paste directly:
-
----
-
 ```markdown
 # Core API Guardrails
 
