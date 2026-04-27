@@ -1,11 +1,13 @@
 services:
   postgres:
-    image: postgres:15-alpine
+    image: postgres:15
     container_name: grid07-postgres
     environment:
       POSTGRES_DB: grid07
       POSTGRES_USER: grid07
       POSTGRES_PASSWORD: grid07
+      PGTZ: Asia/Kolkata
+      TZ: Asia/Kolkata
     ports:
       - "5432:5432"
     volumes:
@@ -17,7 +19,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: redis:7
     container_name: grid07-redis
     ports:
       - "6379:6379"

@@ -4,10 +4,12 @@ import com.assignment.Core_Api_Guardrails.config.AppConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -32,17 +34,27 @@ public class GuardrailService {
         checkVerticalCap(depthLevel);
     }
 
-    public void checkHorizontalCap(Long postId){
-        String key = String.format(BOT_COUNT_KEY,postId);
-        Long count = redisTemplate.opsForValue().increment(key);
+    private static final String HORIZONTAL_CAP_SCRIPT =
+            "local count = redis.call('INCR', KEYS[1]) " +
+                    "if count > tonumber(ARGV[1]) then " +
+                    "  redis.call('DECR', KEYS[1]) " +
+                    "  return -1 " +
+                    "end " +
+                    "return count";
 
-        if(count > appConfig.getHorizontalCap()){
-            redisTemplate.opsForValue().decrement(key);
-            log.warn("cap exceeded for post {}",postId);
-            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "bot reply limit reached for this post {} " + postId);
+    public void checkHorizontalCap(Long postId){
+        String key = String.format(BOT_COUNT_KEY, postId);
+
+        RedisScript<Long> script = RedisScript.of(HORIZONTAL_CAP_SCRIPT, Long.class);
+        Long result = redisTemplate.execute(script, List.of(key), String.valueOf(appConfig.getHorizontalCap()));
+
+        if (result == null || result == -1L) {
+            log.warn("Horizontal cap exceeded for post {}", postId);
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Bot reply limit reached for post " + postId);
         }
 
-        log.debug("horizontal cap passed for the post {} with count {}",postId,count);
+        log.debug("Horizontal cap passed for post {} with count {}", postId, result);
     }
 
     public void checkVerticalCap(int depthLevel){
@@ -57,16 +69,16 @@ public class GuardrailService {
 
     public void checkCooldown(Long botId, Long humanId){
         String key = String.format(COOLDOWN_KEY, botId, humanId);
-        Boolean exists = redisTemplate.hasKey(key);
 
-        if(Boolean.TRUE.equals(exists)){
-            log.warn("cooldown exists for bot {}", botId);
+        Boolean set = redisTemplate.opsForValue()
+                .setIfAbsent(key, "1", appConfig.getBotCooldownTtl(), TimeUnit.SECONDS);
+
+        if (Boolean.FALSE.equals(set)) {
+            log.warn("Cooldown active for bot {} -> human {}", botId, humanId);
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
-                    "bot is on cooldown for this user");
+                    "Bot is on cooldown for this user");
         }
 
-        redisTemplate.opsForValue().set(key,"1",appConfig.getBotCooldownTtl(), TimeUnit.SECONDS);
-        log.debug("cooldown set for bot {} -> human {}" , botId, humanId);
-
+        log.debug("Cooldown set for bot {} -> human {}", botId, humanId);
     }
 }

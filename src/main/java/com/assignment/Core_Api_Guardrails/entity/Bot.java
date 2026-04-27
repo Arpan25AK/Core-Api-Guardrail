@@ -2,10 +2,9 @@ package com.assignment.Core_Api_Guardrails.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.Id;
 
 @Entity
-@Table(name = "bot")
+@Table(name = "bots")
 @Getter
 @Setter
 @NoArgsConstructor

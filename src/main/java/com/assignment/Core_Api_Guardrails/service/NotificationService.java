@@ -22,7 +22,7 @@ public class NotificationService {
     public void handleBotNotification(Long userId, String botName){
         String cooldownKey = String.format(NOTIF_COOLDOWN_KEY,userId);
         String pendingKey = String.format(PENDING_NOTIFS_KEY,userId);
-        String message = "bot" + botName + "has interacted with ur post";
+        String message = "Bot " + botName + " replied to your post";
 
         Boolean Cooldown = redisTemplate.hasKey(cooldownKey);
 

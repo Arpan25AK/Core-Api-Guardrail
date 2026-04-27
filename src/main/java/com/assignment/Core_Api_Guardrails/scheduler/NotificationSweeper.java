@@ -26,6 +26,7 @@ public class NotificationSweeper {
 
         if(keys == null || keys.isEmpty()){
             log.info("NO pending notifications");
+            return;
         }
 
         for(String key : keys){
@@ -38,7 +39,7 @@ public class NotificationSweeper {
             int count = messages.size();
             String firstMessage = messages.get(0);
 
-            String botName = firstMessage.replace(" replied to your post", "");
+            String botName = firstMessage.replace("Bot ", "").replace(" replied to your post", "");
 
             if (count == 1) {
                 log.info("Summarized Push Notification: {} interacted with your posts.", botName);

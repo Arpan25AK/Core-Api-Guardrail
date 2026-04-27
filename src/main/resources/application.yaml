@@ -3,7 +3,7 @@ spring:
     name: Core-Api-Guardrails
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/grid07
+    url: jdbc:postgresql://localhost:5432/grid07?TimeZone=Asia/Kolkata
     username: grid07
     password: grid07
     driver-class-name: org.postgresql.Driver
@@ -11,6 +11,7 @@ spring:
       maximum-pool-size: 20
       minimum-idle: 5
       connection-timeout: 20000
+
 
   jpa:
     hibernate:
@@ -20,6 +21,8 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+        jdbc:
+          time_zone: UTC
 
   data:
     redis:
