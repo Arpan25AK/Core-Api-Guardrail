@@ -12,7 +12,12 @@ public class ViralityService {
 
     private static final String VIRALITY_KEY = "post:%d:virality_score";
 
-    public void addHumanReply(Long postId){
+    public void addBotReply(Long postId){
+        String key = String.format(VIRALITY_KEY,postId);
+        redisTemplate.opsForValue().increment(key,1);
+    }
+
+    public void addHumanLike(Long postId){
         String key = String.format(VIRALITY_KEY,postId);
         redisTemplate.opsForValue().increment(key,20);
     }

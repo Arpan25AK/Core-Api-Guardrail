@@ -10,7 +10,4 @@ public class CommentService {
 
     private final CommentRepo commentRepo;
 
-    public CommentService(CommentRepo commentRepo){
-        this.commentRepo = commentRepo;
-    }
 }
