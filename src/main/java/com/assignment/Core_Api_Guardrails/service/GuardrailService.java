@@ -28,6 +28,11 @@ public class GuardrailService {
         checkHorizontalCap(postId);
     }
 
+    public void enforceHorizontalAndVerticalCap(Long postId, int depthLevel){
+        checkHorizontalCap(postId);
+        checkVerticalCap(depthLevel);
+    }
+
     public void checkHorizontalCap(Long postId){
         String key = String.format(BOT_COUNT_KEY,postId);
         Long count = redisTemplate.opsForValue().increment(key);

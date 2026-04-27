@@ -35,7 +35,7 @@ public class PostService {
     @Transactional
     public void likePost(Long postId){
         postRepo.findById(postId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND,"post dosent exist with id {}"+ postId));
+                new ResponseStatusException(HttpStatus.NOT_FOUND,"post doesn't exist with id {}"+ postId));
 
         viralityService.addHumanLike(postId);
         log.info("Post {} liked — virality +20", postId);
